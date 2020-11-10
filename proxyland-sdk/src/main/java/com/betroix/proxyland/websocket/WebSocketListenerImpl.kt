@@ -1,8 +1,7 @@
 package com.betroix.proxyland.websocket
 
 import com.betroix.proxyland.exceptions.ResponseException
-import com.betroix.proxyland.models.json.BaseResponse
-import com.beust.klaxon.Klaxon
+import com.betroix.proxyland.models.protobuf.Model
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -19,27 +18,24 @@ internal class WebSocketListenerImpl(socket: com.betroix.proxyland.websocket.Web
 
     override fun onMessage(webSocket: WebSocket, text: String) {
         socket.postEvent(SocketEvents.BaseMessageEvent(text))
+    }
 
+    override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
         try {
-            val response = Klaxon().parse<BaseResponse>(text)
+            val response = Model.ServerMessage.parseFrom(bytes.toByteArray())
 
-            when(response?.action) {
-                "auth" -> socket.postEvent(SocketEvents.AuthMessageEvent(response))
-                "heartbeat" -> socket.postEvent(SocketEvents.HeartbeatEvent(response))
-                "https" -> socket.postEvent(SocketEvents.HttpsEvent(response.toTyped()))
-                "http" -> socket.postEvent(SocketEvents.HttpEvent(response.toTyped()))
-                "status" -> socket.postEvent(SocketEvents.StatusEvent(response.toTyped()))
+            when(response.action) {
+                Model.Action.AUTH -> socket.postEvent(SocketEvents.AuthMessageEvent(response))
+                Model.Action.HEARTBEAT -> socket.postEvent(SocketEvents.HeartbeatEvent(response))
+                Model.Action.HTTPS -> socket.postEvent(SocketEvents.HttpsEvent(response))
+                Model.Action.HTTP -> socket.postEvent(SocketEvents.HttpEvent(response))
+                Model.Action.STATUS -> socket.postEvent(SocketEvents.StatusEvent(response))
                 else -> throw ResponseException("Unknown action type.")
             }
         } catch (e: Exception) {
             println(e)
             // FIXME: 11/2/2020 Log this probably
         }
-
-    }
-
-    override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-        // TODO: 11/2/2020 If binary data is transferred
     }
 
     override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {

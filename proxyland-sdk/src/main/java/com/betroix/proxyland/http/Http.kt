@@ -4,16 +4,13 @@ import android.util.Log
 import com.betroix.proxyland.IApi
 import com.betroix.proxyland.exceptions.RequestException
 import com.betroix.proxyland.exceptions.ResponseException
-import com.betroix.proxyland.models.json.HttpBodyResponse
-import com.betroix.proxyland.models.json.HttpData
-import com.betroix.proxyland.models.json.HttpDataResponse
-import com.betroix.proxyland.models.json.TypedBaseResponse
+import com.betroix.proxyland.models.protobuf.Model
+import com.google.protobuf.ByteString
 import okhttp3.*
 import java.io.BufferedInputStream
 import java.io.IOException
-import java.nio.ByteBuffer
 
-internal class Http(private val api: IApi, private val typedResponse: TypedBaseResponse<HttpData>) {
+internal class Http(private val api: IApi, private val message: Model.ServerMessage) {
     companion object {
         private val TAG = "Proxyland Api"
     }
@@ -21,10 +18,13 @@ internal class Http(private val api: IApi, private val typedResponse: TypedBaseR
     private val client = OkHttpClient()
 
     fun request() {
-        val body = typedResponse.data.body ?: throw RequestException("No body provided.");
+        val body =
+            if (message.bodyOneofCase == Model.ServerMessage.BodyOneofCase.HTTP) message.http else throw RequestException(
+                "No body provided."
+            );
         if (body.url == null) throw RequestException("No url provided.")
         if (body.method == null) throw RequestException("No method provided.")
-        if (body.headers == null) throw RequestException("No headers provided.")
+        if (body.headersMap == null) throw RequestException("No headers provided.")
 
         val builder = Request.Builder()
             .url(body.url)
@@ -32,11 +32,11 @@ internal class Http(private val api: IApi, private val typedResponse: TypedBaseR
                 body.method,
                 if (body.method == "GET" || body.method == "HEAD") null else HttpRequestBody(
                     api.websocket,
-                    typedResponse
+                    message
                 )
             );
 
-        for ((name, key) in body.headers) {
+        for ((name, key) in body.headersMap) {
             builder.addHeader(name, key)
         }
 
@@ -44,17 +44,22 @@ internal class Http(private val api: IApi, private val typedResponse: TypedBaseR
         client.newCall(builder.build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.w(TAG, "HTTP REQUEST", e)
-                val data = HttpDataResponse(
-                    HttpBodyResponse(listOf(), "Buffer"),
-                    mapOf("statusCode" to "400"),
-                    false
-                );
-                api.sendToSocket(typedResponse, data)
-                api.sendToSocket(typedResponse, HttpData(end = true))
+
+
+                api.sendToSocket(
+                    message,
+                    Model.RemoteMessage.newBuilder().setHttp(
+                        Model.HttpRemoteMessage.newBuilder().setStatusCode(400).setEnd(false)
+                    )
+                )
+                api.sendToSocket(
+                    message,
+                    Model.RemoteMessage.newBuilder()
+                        .setHttp(Model.HttpRemoteMessage.newBuilder().setEnd(true))
+                )
             }
 
             override fun onResponse(call: Call, response: Response) {
-
                 var requestStart = System.nanoTime()
 
                 response.body.use {
@@ -70,27 +75,23 @@ internal class Http(private val api: IApi, private val typedResponse: TypedBaseR
                             requestStart = System.nanoTime()
 
                             while (read > -1) {
-                                val httpBody = HttpBodyResponse(
-                                    buffer.sliceArray(IntRange(0, read - 1)).map { i -> i.toInt() },
-                                    "Buffer"
-                                )
-
                                 Log.d(TAG, "Slice buffer: ${System.nanoTime() - requestStart}")
                                 requestStart = System.nanoTime()
 
-                                var headers: Map<String, String>? = null
-                                if(!headersSent) {
+                                val http = Model.HttpRemoteMessage.newBuilder()
+                                if (!headersSent) {
                                     headersSent = true
-                                    headers = response.headers.toMap().plus("statusCode" to response.code.toString())
+                                    http.putAllHeaders(response.headers.toMap())
+                                    http.statusCode = response.code
                                 }
 
-                                val data = HttpDataResponse(
-                                    httpBody,
-                                    headers,
-                                    false
-                                )
+                                http.data = ByteString.copyFrom(buffer, 0, read)
+                                http.end = false
 
-                                api.sendToSocket(typedResponse, data)
+                                api.sendToSocket(
+                                    message,
+                                    Model.RemoteMessage.newBuilder().setHttp(http)
+                                )
 
                                 Log.d(TAG, "Write: ${System.nanoTime() - requestStart}")
                                 requestStart = System.nanoTime()
@@ -103,7 +104,11 @@ internal class Http(private val api: IApi, private val typedResponse: TypedBaseR
                         }
                     }
 
-                    api.sendToSocket(typedResponse, HttpData(end = true))
+                    api.sendToSocket(
+                        message,
+                        Model.RemoteMessage.newBuilder()
+                            .setHttp(Model.HttpRemoteMessage.newBuilder().setEnd(true))
+                    )
                 }
             }
         })

@@ -1,6 +1,7 @@
 package com.betroix.proxyland.websocket
 
 import com.betroix.proxyland.models.json.*
+import com.betroix.proxyland.models.protobuf.Model
 import okhttp3.Response
 
 class SocketEvents {
@@ -18,13 +19,13 @@ class SocketEvents {
 
     class ChangeStatusEvent internal constructor(val status: SocketState) : Event()
 
-    class AuthMessageEvent internal constructor(val response: BaseResponse): Event()
+    class AuthMessageEvent internal constructor(val response: Model.ServerMessage): Event()
 
-    class HeartbeatEvent internal constructor(val response: BaseResponse): Event()
+    class HeartbeatEvent internal constructor(val response: Model.ServerMessage): Event()
 
-    class HttpsEvent internal constructor(val response: TypedBaseResponse<HttpsData>): Event()
+    class HttpsEvent internal constructor(val response: Model.ServerMessage): Event()
 
-    class HttpEvent internal constructor(val response: TypedBaseResponse<HttpData>): Event()
+    class HttpEvent internal constructor(val response: Model.ServerMessage): Event()
 
-    class StatusEvent internal constructor(val response: TypedBaseResponse<StatusData>): Event()
+    class StatusEvent internal constructor(val response: Model.ServerMessage): Event()
 }

@@ -9,6 +9,8 @@ import io.reactivex.rxjava3.subjects.PublishSubject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.internal.ws.RealWebSocket
+import okio.ByteString
+import okio.ByteString.Companion.toByteString
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -105,6 +107,13 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
 
         return false
     }
+
+    override fun send(data: ByteArray): Boolean {
+        if (mState === SocketState.OPEN) {
+            return mRealWebSocket?.send(data.toByteString()) ?: false
+        }
+
+        return false    }
 
     override fun <T : SocketEvents.Event> observe(eventClass: Class<T>) : Observable<T> {
         return eventBus.filter(eventClass::isInstance)

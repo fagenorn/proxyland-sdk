@@ -1,0 +1,73 @@
+syntax = "proto3";
+option java_package = "com.betroix.proxyland.models.protobuf";
+// option java_multiple_files = true;
+
+message ServerMessage {
+  string id = 1;
+  string version = 2;
+  Action action = 3;
+
+  oneof body_oneof {
+    HttpsServerMessage https = 4;
+    HttpServerMessage http = 5;
+    StatusMessage status = 6;
+  }
+}
+
+message RemoteMessage {
+  string id = 1;
+  string version = 2;
+  Action action = 3;
+
+  oneof body_oneof {
+    AuthMessage auth = 4;
+    HttpRemoteMessage http = 5;
+    HttpsRemoteMessage https = 6;
+  }
+}
+
+enum Action {
+  UNKNOWN = 0;
+  AUTH = 1;
+  HEARTBEAT = 2;
+  HTTPS = 3;
+  HTTP = 4;
+  STATUS = 5;
+}
+
+message HttpsServerMessage {
+  bytes data = 1; // After connect, written data
+  string host = 2; // example.com
+  int32 port = 3; // 443
+  string method = 4; // CONNECT
+}
+
+message HttpServerMessage {
+  bool end = 1; // End of request
+  bytes data = 2; // Written bytes from socket
+  string url = 3; // http://example.com/path/to/site
+  string method = 4; // POST
+  map<string, string> headers = 5;
+}
+
+message StatusMessage {
+  bool authenticated = 1;
+}
+
+message AuthMessage {
+  string secret = 1;
+  string remoteId = 2;
+  string partnerId = 3;
+  string remoteVersion = 4;
+}
+
+message HttpRemoteMessage {
+  bool end = 1; // End of response
+  bytes data = 2; // Read bytes
+  map<string, string> headers = 3;
+  int32 statusCode = 4;
+}
+
+message HttpsRemoteMessage {
+  bytes data = 1; // Raw read bytes
+}

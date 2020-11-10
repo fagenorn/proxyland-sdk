@@ -1,9 +1,7 @@
 package com.betroix.proxyland.http
 
 import android.util.Log
-import com.betroix.proxyland.Api
-import com.betroix.proxyland.models.json.HttpData
-import com.betroix.proxyland.models.json.TypedBaseResponse
+import com.betroix.proxyland.models.protobuf.Model
 import com.betroix.proxyland.websocket.IWebSocket
 import com.betroix.proxyland.websocket.SocketEvents
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -13,7 +11,7 @@ import okio.BufferedSink
 import okio.Pipe
 import okio.buffer
 
-class HttpRequestBody(websocket: IWebSocket, response: TypedBaseResponse<HttpData>) :
+class HttpRequestBody(websocket: IWebSocket, message: Model.ServerMessage) :
     RequestBody() {
     companion object {
         private val TAG = "Proxyland Http Request"
@@ -26,16 +24,11 @@ class HttpRequestBody(websocket: IWebSocket, response: TypedBaseResponse<HttpDat
         // Start the sink writer and listen for any extra data.
         websocket.observe(SocketEvents.HttpEvent::class.java)
             .subscribeOn(Schedulers.io())
-            .takeUntil { it.response.data.end }
-            .filter { it.response.id == response.id && it.response.data.body?.type == "Buffer" }
+            .filter { it.response.id == message.id }
+            .takeUntil { it.response.http.end }
             .doOnError { Log.e(TAG, "HTTP WRITE REQUEST", it) }
-            .doOnComplete {
-                bufferedSink.close()
-            }
-            .subscribe ({ i ->
-                val bytes = i.response.data.body!!.data!!.map { j -> j.toByte() }.toByteArray()
-                bufferedSink.write(bytes)
-            }, {})
+            .doOnComplete { bufferedSink.close() }
+            .subscribe ({ bufferedSink.write(it.response.http.data.toByteArray()) }, {})
     }
 
     override fun contentType(): MediaType? {

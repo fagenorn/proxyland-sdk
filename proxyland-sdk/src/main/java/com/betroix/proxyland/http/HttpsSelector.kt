@@ -2,11 +2,10 @@ package com.betroix.proxyland.http
 
 import android.util.Log
 import com.betroix.proxyland.IApi
-import com.betroix.proxyland.models.json.HttpsData
-import com.betroix.proxyland.models.json.TypedBaseResponse
+import com.betroix.proxyland.models.protobuf.Model
+import com.google.protobuf.ByteString
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.nio.channels.SelectionKey
 import java.nio.channels.Selector
@@ -36,7 +35,7 @@ internal class HttpsSelector(private val api: IApi) {
                 it.register(
                     selector,
                     SelectionKey.OP_READ,
-                    Pair(https.response, https.writerDispose)
+                    Pair(https.message, https.writerDispose)
                 )
             }, {})
     }
@@ -52,7 +51,7 @@ internal class HttpsSelector(private val api: IApi) {
 
             while (iter.hasNext()) {
                 val key = iter.next() as SelectionKey
-                val (typedResponse, disposable) = key.attachment() as Pair<TypedBaseResponse<HttpsData>, Disposable>
+                val (message, disposable) = key.attachment() as Pair<Model.ServerMessage, Disposable>
 
                 iter.remove()
 
@@ -70,8 +69,12 @@ internal class HttpsSelector(private val api: IApi) {
                             val result = ByteArray(read)
                             buffer.get(result, 0, read)
                             api.sendToSocket(
-                                typedResponse,
-                                HttpsData(type = "Buffer", data = result.map { s -> s.toInt() })
+                                message,
+                                Model.RemoteMessage.newBuilder().setHttps(
+                                    Model.HttpsRemoteMessage.newBuilder().setData(
+                                        ByteString.copyFrom(result)
+                                    )
+                                )
                             )
                         }
 
