@@ -55,17 +55,16 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
 
     override fun createSocket() {
         // Get websocket endpoint and secret from server.
-        // val serverInfo = getServerInfo()
+//         val serverInfo = getServerInfo()
         secret = "aaf2289f-ef5c-4c1f-ba07-f6b860c8dc69" ; // serverInfo.secret
-        // this.websocket = SocketBuilder(serverInfo.urls[0]).build()
-        this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
+//         this.websocket = SocketBuilder(serverInfo.url).build()
+        // this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
+         this.websocket = SocketBuilder("ws://192.168.1.72:4343").build()
     }
 
     override fun startSocket(timeout: Long): Maybe<SocketEvents.StatusEvent> {
 //        websocket.observe(SocketEvents.BaseMessageEvent::class.java)
-//                .subscribe {
-//                    println("MESSAGE: ${it.message}")
-//                }
+//                .subscribe { Log.i(TAG, "Message - ${it.message}") }
 
         // Monitor any CONNECT requests to create TCP tunnel.
         websocket.observe(SocketEvents.HttpsEvent::class.java)
@@ -82,6 +81,7 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
         websocket.observe(SocketEvents.AuthMessageEvent::class.java)
             .doOnError { Log.e(TAG, "AUTH REQUEST", it) }
             .subscribe({
+                Log.i(TAG, "Auth message received")
                 val data = Model.AuthMessage.newBuilder().setSecret(secret).setRemoteVersion(remoteVersion).setRemoteId(remoteId).setPartnerId(partnerId)
                 sendToSocket(it.response, Model.RemoteMessage.newBuilder().setAuth(data))
             }, {})
@@ -94,6 +94,7 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
 
         // Wait for authenticate success status before socket is ready for use.
         val authObs = websocket.observe(SocketEvents.StatusEvent::class.java)
+            .doOnNext { Log.i(TAG, "Status message received")}
             .filter { it.response.status.authenticated }
             .firstElement()
             .timeout(timeout, TimeUnit.MILLISECONDS)

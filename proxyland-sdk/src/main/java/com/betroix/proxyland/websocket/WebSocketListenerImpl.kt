@@ -1,5 +1,6 @@
 package com.betroix.proxyland.websocket
 
+import android.util.Log
 import com.betroix.proxyland.exceptions.ResponseException
 import com.betroix.proxyland.models.protobuf.Model
 import okhttp3.Response
@@ -8,6 +9,10 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 
 internal class WebSocketListenerImpl(socket: com.betroix.proxyland.websocket.WebSocket) : WebSocketListener() {
+    companion object {
+        private val TAG = "Proxyland Web Socket Listener"
+    }
+
     private val socket = socket;
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -21,8 +26,11 @@ internal class WebSocketListenerImpl(socket: com.betroix.proxyland.websocket.Web
     }
 
     override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+        socket.postEvent(SocketEvents.BaseMessageEvent(bytes.toByteArray().joinToString(",", "[", "]") { it.toInt().toString() }))
+
         try {
             val response = Model.ServerMessage.parseFrom(bytes.toByteArray())
+
 
             when(response.action) {
                 Model.Action.AUTH -> socket.postEvent(SocketEvents.AuthMessageEvent(response))
@@ -33,8 +41,7 @@ internal class WebSocketListenerImpl(socket: com.betroix.proxyland.websocket.Web
                 else -> throw ResponseException("Unknown action type.")
             }
         } catch (e: Exception) {
-            println(e)
-            // FIXME: 11/2/2020 Log this probably
+            Log.e(TAG, "Failed to parse server message", e)
         }
     }
 

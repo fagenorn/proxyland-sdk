@@ -1,7 +1,6 @@
 package com.betroix.proxyland.websocket
 
 import android.util.Log
-import com.betroix.proxyland.Api
 import com.betroix.proxyland.websocket.SocketEvents.CloseStatusEvent
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -9,7 +8,6 @@ import io.reactivex.rxjava3.subjects.PublishSubject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.internal.ws.RealWebSocket
-import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
@@ -18,7 +16,7 @@ import kotlin.math.roundToLong
 internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : IWebSocket {
     companion object {
         private val TAG = "Proxyland WebSocket"
-        private  const val CLOSE_REASON = "End of session"
+        private const val CLOSE_REASON = "End of session"
         private const val MAX_COLLISION = 7
     }
 
@@ -41,7 +39,8 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
         if (mRealWebSocket != null && mState !== SocketState.CLOSED) return
 
         changeState(SocketState.OPENING)
-        mRealWebSocket = mHttpClient.build().newWebSocket(mRequest, WebSocketListenerImpl(this)) as RealWebSocket
+        mRealWebSocket =
+            mHttpClient.build().newWebSocket(mRequest, WebSocketListenerImpl(this)) as RealWebSocket
     }
 
     fun changeState(newState: SocketState) {
@@ -67,22 +66,23 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
         }
 
         // Calculate delay time: https://en.wikipedia.org/wiki/Exponential_backoff
-        val collision = if (reconnectionAttempts > MAX_COLLISION) MAX_COLLISION else reconnectionAttempts
+        val collision =
+            if (reconnectionAttempts > MAX_COLLISION) MAX_COLLISION else reconnectionAttempts
         val delayTime = ((2.0.pow(collision.toDouble()) - 1) / 2).roundToLong() * 1000
 
         postEvent(SocketEvents.ReconnectStatusEvent(reconnectionAttempts + 1, delayTime))
 
         Observable.timer(delayTime, TimeUnit.MILLISECONDS)
-            .doOnError { Log.w(TAG, "AUTO RECONNECT", it)}
-            .subscribe ({
-                    changeState(SocketState.RECONNECTING);
-                    reconnectionAttempts++;
-                    connect();
-                }, {})
+            .doOnError { Log.w(TAG, "AUTO RECONNECT", it) }
+            .subscribe({
+                changeState(SocketState.RECONNECTING);
+                reconnectionAttempts++;
+                connect();
+            }, {})
     }
 
     override fun close() {
-       close(1000, CLOSE_REASON)
+        close(1000, CLOSE_REASON)
     }
 
     fun close(code: Int, reason: String) {
@@ -113,11 +113,12 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
             return mRealWebSocket?.send(data.toByteString()) ?: false
         }
 
-        return false    }
+        return false
+    }
 
-    override fun <T : SocketEvents.Event> observe(eventClass: Class<T>) : Observable<T> {
+    override fun <T : SocketEvents.Event> observe(eventClass: Class<T>): Observable<T> {
         return eventBus.filter(eventClass::isInstance)
-                .cast(eventClass)
-                .subscribeOn(Schedulers.io())
+            .cast(eventClass)
+            .subscribeOn(Schedulers.io())
     }
 }
