@@ -2,18 +2,17 @@ package com.betroix.proxyland.websocket
 
 import android.util.Log
 import com.betroix.proxyland.websocket.SocketEvents.CloseStatusEvent
+import com.neovisionaries.ws.client.WebSocket
+import com.neovisionaries.ws.client.WebSocketFactory
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.internal.ws.RealWebSocket
-import okio.ByteString.Companion.toByteString
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
-internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : IWebSocket {
+internal class WebSocket(private val webSocketFactory: WebSocketFactory, private val url: String) :
+    IWebSocket {
     companion object {
         private val TAG = "Proxyland WebSocket"
         private const val CLOSE_REASON = "End of session"
@@ -21,9 +20,7 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
     }
 
     private var mState: SocketState
-    private val mRequest: Request = request
-    private val mHttpClient: OkHttpClient.Builder = httpClient
-    private var mRealWebSocket: RealWebSocket? = null
+    private var mRealWebSocket: WebSocket? = null
 
     internal var reconnectionAttempts = 0
     internal var isForceTermination = false
@@ -38,9 +35,10 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
     override fun connect() {
         if (mRealWebSocket != null && mState !== SocketState.CLOSED) return
 
-        changeState(SocketState.OPENING)
-        mRealWebSocket =
-            mHttpClient.build().newWebSocket(mRequest, WebSocketListenerImpl(this)) as RealWebSocket
+        mRealWebSocket = webSocketFactory.createSocket(url)
+        mRealWebSocket!!.addListener(WebSocketListenerImpl(this))
+        mRealWebSocket!!.frameQueueSize = 10
+        mRealWebSocket!!.connect()
     }
 
     fun changeState(newState: SocketState) {
@@ -61,7 +59,7 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
         changeState(SocketState.RECONNECT_ATTEMPT)
 
         if (mRealWebSocket != null) {
-            mRealWebSocket!!.cancel()
+            mRealWebSocket!!.disconnect()
             mRealWebSocket = null
         }
 
@@ -87,12 +85,12 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
 
     fun close(code: Int, reason: String) {
         if (mRealWebSocket == null) return
-        mRealWebSocket!!.close(code, reason)
+        mRealWebSocket!!.disconnect(code, reason)
     }
 
     override fun terminate() {
         isForceTermination = true // skip onFailure auto reconnect
-        mRealWebSocket?.cancel()
+        mRealWebSocket!!.disconnect()
         mRealWebSocket = null
 
         changeState(SocketState.CLOSED)
@@ -100,20 +98,16 @@ internal class WebSocket(httpClient: OkHttpClient.Builder, request: Request) : I
         eventBus.onComplete()
     }
 
-    override fun send(data: String): Boolean {
+    override fun send(data: String) {
         if (mState === SocketState.OPEN) {
-            return mRealWebSocket?.send(data) ?: false
+            mRealWebSocket?.sendText(data)
         }
-
-        return false
     }
 
-    override fun send(data: ByteArray): Boolean {
+    override fun send(data: ByteArray) {
         if (mState === SocketState.OPEN) {
-            return mRealWebSocket?.send(data.toByteString()) ?: false
+            mRealWebSocket?.sendBinary(data)
         }
-
-        return false
     }
 
     override fun <T : SocketEvents.Event> observe(eventClass: Class<T>): Observable<T> {

@@ -1,19 +1,17 @@
 package com.betroix.proxyland.websocket
 
-import com.betroix.proxyland.models.json.*
 import com.betroix.proxyland.models.protobuf.Model
-import okhttp3.Response
 
 class SocketEvents {
     open class Event
 
     class BaseMessageEvent internal constructor(val message: String): Event()
 
-    class OpenStatusEvent internal constructor(val response: Response) : Event()
+    class OpenStatusEvent internal constructor(val response: MutableMap<String, MutableList<String>>?) : Event()
 
     class CloseStatusEvent internal constructor(val code: Int, val reason: String) : Event()
 
-    class FailureStatusEvent internal constructor(val throwable: Throwable) : Event()
+    class FailureStatusEvent internal constructor(val throwable: Throwable?) : Event()
 
     class ReconnectStatusEvent internal constructor(val attemptsCount: Int, val attemptDelay: Long) : Event()
 

@@ -7,8 +7,8 @@ interface IWebSocket {
     fun connect()
     fun close()
     fun terminate()
-    fun send(data: String) : Boolean;
-    fun send(data: ByteArray) : Boolean;
+    fun send(data: String)
+    fun send(data: ByteArray)
     fun <T : SocketEvents.Event> observe(eventClass: Class<T>) : Observable<T>
 }
 
@@ -25,11 +25,11 @@ class WebSocketEmpty : IWebSocket {
         throw NotImplementedError()
     }
 
-    override fun send(data: String): Boolean {
+    override fun send(data: String) {
         throw NotImplementedError()
     }
 
-    override fun send(data: ByteArray): Boolean {
+    override fun send(data: ByteArray) {
         throw NotImplementedError()
     }
 

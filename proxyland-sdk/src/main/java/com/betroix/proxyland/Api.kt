@@ -66,7 +66,8 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
 //         val serverInfo = getServerInfo()
         secret = "aaf2289f-ef5c-4c1f-ba07-f6b860c8dc69"; // serverInfo.secret
 //         this.websocket = SocketBuilder(serverInfo.url).build()
-        this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
+//        this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
+        this.websocket = SocketBuilder("ws://192.168.1.72:4343").build()
     }
 
     override fun startSocket(timeout: Long): Maybe<SocketEvents.StatusEvent> {
@@ -79,10 +80,13 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
         websocket.observe(SocketEvents.CloseStatusEvent::class.java)
             .subscribe { Log.e(TAG, "Web Socket Close - ${it.code}:${it.reason}") }
 
+        websocket.observe(SocketEvents.ChangeStatusEvent::class.java)
+            .subscribe { Log.d(TAG, "Web Socket Status - ${it.status}") }
+
         // Monitor any CONNECT requests to create TCP tunnel.
         websocket.observe(SocketEvents.HttpsEvent::class.java)
             .filter { it.response.https.method.equals("connect", true) }
-            .doOnNext { Log.i(TAG, "HTTPS CONNECT message received") }
+            .doOnNext { Log.d(TAG, "HTTPS CONNECT message received") }
             .doOnError { Log.e(TAG, "HTTPS CONNECT REQUEST", it) }
             .subscribe({ selectorLoop.register(Https(this, it.response)) }, {})
 
@@ -105,13 +109,13 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
         // Simple HTTP request.
         websocket.observe(SocketEvents.HttpEvent::class.java)
             .filter { !it.response.http.url.isNullOrBlank() }
-            .doOnNext { Log.i(TAG, "HTTP message received") }
+            .doOnNext { Log.d(TAG, "HTTP message received") }
             .doOnError { Log.e(TAG, "HTTP REQUEST", it) }
             .subscribe({ Http(this, it.response).request() }, {})
 
         // Wait for authenticate success status before socket is ready for use.
         val authObs = websocket.observe(SocketEvents.StatusEvent::class.java)
-            .doOnNext { Log.i(TAG, "Status message received") }
+            .doOnNext { Log.d(TAG, "Status message received") }
             .filter { it.response.status.authenticated }
             .firstElement()
             .timeout(timeout, TimeUnit.MILLISECONDS)
