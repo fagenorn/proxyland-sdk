@@ -5,7 +5,7 @@ enum class SocketState {
     CLOSED,
     OPENING,
     OPEN,
-    CONNECT_ERROR,
     RECONNECT_ATTEMPT,
     RECONNECTING,
+    CONNECT_ERROR,
 }

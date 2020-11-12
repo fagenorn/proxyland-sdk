@@ -38,7 +38,7 @@ internal class WebSocket(private val webSocketFactory: WebSocketFactory, private
         mRealWebSocket = webSocketFactory.createSocket(url)
         mRealWebSocket!!.addListener(WebSocketListenerImpl(this))
         mRealWebSocket!!.frameQueueSize = 10
-        mRealWebSocket!!.connect()
+        mRealWebSocket!!.connectAsynchronously()
     }
 
     fun changeState(newState: SocketState) {
@@ -52,7 +52,7 @@ internal class WebSocket(private val webSocketFactory: WebSocketFactory, private
     }
 
     fun reconnect() {
-        if (mState !== SocketState.CONNECT_ERROR) {
+        if (mState !== SocketState.CLOSED && mState !== SocketState.CONNECT_ERROR) {
             return
         }
 
@@ -93,7 +93,6 @@ internal class WebSocket(private val webSocketFactory: WebSocketFactory, private
         mRealWebSocket!!.disconnect()
         mRealWebSocket = null
 
-        changeState(SocketState.CLOSED)
         postEvent(CloseStatusEvent(1006, ""))
         eventBus.onComplete()
     }

@@ -41,6 +41,10 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         cause: WebSocketException?
     ) {
         socket.changeState(SocketState.CONNECT_ERROR)
+
+        if (!socket.isForceTermination) {
+            socket.reconnect()
+        }
     }
 
     override fun onDisconnected(
@@ -59,7 +63,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         }
 
         if (!socket.isForceTermination) {
-            socket.isForceTermination = false
             socket.reconnect()
         }
     }
@@ -92,7 +95,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         websocket: com.neovisionaries.ws.client.WebSocket?,
         frame: WebSocketFrame?
     ) {
-        socket.changeState(SocketState.CLOSING)
     }
 
     override fun onPingFrame(
@@ -186,7 +188,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         websocket: com.neovisionaries.ws.client.WebSocket?,
         cause: WebSocketException?
     ) {
-        Log.e(TAG, "OHOH7", cause)
     }
 
     override fun onFrameError(
@@ -194,7 +195,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         cause: WebSocketException?,
         frame: WebSocketFrame?
     ) {
-        Log.e(TAG, "OHOH6", cause)
     }
 
     override fun onMessageError(
@@ -202,7 +202,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         cause: WebSocketException?,
         frames: MutableList<WebSocketFrame>?
     ) {
-        Log.e(TAG, "OHOH5", cause)
     }
 
     override fun onMessageDecompressionError(
@@ -210,7 +209,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         cause: WebSocketException?,
         compressed: ByteArray?
     ) {
-        Log.e(TAG, "OHOH4", cause)
     }
 
     override fun onTextMessageError(
@@ -218,7 +216,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         cause: WebSocketException?,
         data: ByteArray?
     ) {
-        Log.e(TAG, "OHOH3", cause)
     }
 
     override fun onSendError(
@@ -226,14 +223,12 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         cause: WebSocketException?,
         frame: WebSocketFrame?
     ) {
-        Log.e(TAG, "OHOH2", cause)
     }
 
     override fun onUnexpectedError(
         websocket: com.neovisionaries.ws.client.WebSocket?,
         cause: WebSocketException?
     ) {
-        Log.e(TAG, "OHOH", cause)
     }
 
     override fun handleCallbackError(

@@ -56,7 +56,7 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
         request.version = response.version
 
         val message = request.build().toByteArray();
-//        Log.i(TAG, "(S) Message - ${message.joinToString(",", "[", "]") { it.toInt().toString() }}")
+//        Log.d(TAG, "(S) Message - ${message.joinToString(",", "[", "]") { it.toInt().toString() }}")
 
         websocket.send(message)
     }
@@ -97,12 +97,17 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
 
         // Authenticate remote.
         websocket.observe(SocketEvents.AuthMessageEvent::class.java)
+            .doOnNext { Log.d(TAG, "Auth message received") }
             .doOnError { Log.e(TAG, "AUTH REQUEST", it) }
             .subscribe({
-                Log.i(TAG, "Auth message received")
                 val data =
-                    Model.AuthMessage.newBuilder().setSecret(secret).setRemoteVersion(remoteVersion)
-                        .setRemoteId(remoteId).setPartnerId(partnerId)
+                    Model.AuthMessage
+                        .newBuilder()
+                        .setSecret(secret)
+                        .setRemoteVersion(remoteVersion)
+                        .setRemoteId(remoteId)
+                        .setPartnerId(partnerId)
+
                 sendToSocket(it.response, Model.RemoteMessage.newBuilder().setAuth(data))
             }, {})
 
