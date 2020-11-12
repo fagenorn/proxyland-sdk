@@ -7,7 +7,7 @@ import com.betroix.proxyland.exceptions.ResponseException
 import com.betroix.proxyland.http.Http
 import com.betroix.proxyland.http.Https
 import com.betroix.proxyland.http.HttpsSelector
-import com.betroix.proxyland.models.json.*
+import com.betroix.proxyland.models.json.WebsocketServerResponse
 import com.betroix.proxyland.models.protobuf.Model
 import com.betroix.proxyland.websocket.IWebSocket
 import com.betroix.proxyland.websocket.SocketBuilder
@@ -41,7 +41,12 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
 
             val json = JSONObject(body)
 
-            return WebsocketServerResponse(json.getString("url"), listOf(json.getString("url")), json.getString("secret"), json.getBoolean("tls"))
+            return WebsocketServerResponse(
+                json.getString("url"),
+                listOf(json.getString("url")),
+                json.getString("secret"),
+                json.getBoolean("tls")
+            )
         }
     }
 
@@ -50,25 +55,34 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
         request.action = response.action
         request.version = response.version
 
-        websocket.send(request.build().toByteArray())
+        val message = request.build().toByteArray();
+//        Log.i(TAG, "(S) Message - ${message.joinToString(",", "[", "]") { it.toInt().toString() }}")
+
+        websocket.send(message)
     }
 
     override fun createSocket() {
         // Get websocket endpoint and secret from server.
 //         val serverInfo = getServerInfo()
-        secret = "aaf2289f-ef5c-4c1f-ba07-f6b860c8dc69" ; // serverInfo.secret
+        secret = "aaf2289f-ef5c-4c1f-ba07-f6b860c8dc69"; // serverInfo.secret
 //         this.websocket = SocketBuilder(serverInfo.url).build()
-        // this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
-         this.websocket = SocketBuilder("ws://192.168.1.72:4343").build()
+        this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
     }
 
     override fun startSocket(timeout: Long): Maybe<SocketEvents.StatusEvent> {
 //        websocket.observe(SocketEvents.BaseMessageEvent::class.java)
-//                .subscribe { Log.i(TAG, "Message - ${it.message}") }
+//            .subscribe { Log.i(TAG, "(R) Message - ${it.message}") }
+
+        websocket.observe(SocketEvents.FailureStatusEvent::class.java)
+            .subscribe { Log.e(TAG, "Web Socket Failure", it.throwable) }
+
+        websocket.observe(SocketEvents.CloseStatusEvent::class.java)
+            .subscribe { Log.e(TAG, "Web Socket Close - ${it.code}:${it.reason}") }
 
         // Monitor any CONNECT requests to create TCP tunnel.
         websocket.observe(SocketEvents.HttpsEvent::class.java)
             .filter { it.response.https.method.equals("connect", true) }
+            .doOnNext { Log.i(TAG, "HTTPS CONNECT message received") }
             .doOnError { Log.e(TAG, "HTTPS CONNECT REQUEST", it) }
             .subscribe({ selectorLoop.register(Https(this, it.response)) }, {})
 
@@ -82,19 +96,22 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
             .doOnError { Log.e(TAG, "AUTH REQUEST", it) }
             .subscribe({
                 Log.i(TAG, "Auth message received")
-                val data = Model.AuthMessage.newBuilder().setSecret(secret).setRemoteVersion(remoteVersion).setRemoteId(remoteId).setPartnerId(partnerId)
+                val data =
+                    Model.AuthMessage.newBuilder().setSecret(secret).setRemoteVersion(remoteVersion)
+                        .setRemoteId(remoteId).setPartnerId(partnerId)
                 sendToSocket(it.response, Model.RemoteMessage.newBuilder().setAuth(data))
             }, {})
 
         // Simple HTTP request.
         websocket.observe(SocketEvents.HttpEvent::class.java)
-            .filter { it.response.http.method != null }
+            .filter { !it.response.http.url.isNullOrBlank() }
+            .doOnNext { Log.i(TAG, "HTTP message received") }
             .doOnError { Log.e(TAG, "HTTP REQUEST", it) }
             .subscribe({ Http(this, it.response).request() }, {})
 
         // Wait for authenticate success status before socket is ready for use.
         val authObs = websocket.observe(SocketEvents.StatusEvent::class.java)
-            .doOnNext { Log.i(TAG, "Status message received")}
+            .doOnNext { Log.i(TAG, "Status message received") }
             .filter { it.response.status.authenticated }
             .firstElement()
             .timeout(timeout, TimeUnit.MILLISECONDS)

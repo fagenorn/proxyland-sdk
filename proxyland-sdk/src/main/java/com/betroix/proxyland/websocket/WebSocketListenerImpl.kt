@@ -66,9 +66,9 @@ internal class WebSocketListenerImpl(socket: com.betroix.proxyland.websocket.Web
      */
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
         if(!socket.isForceTermination) {
-            socket.isForceTermination = false;
+            socket.isForceTermination = false
             socket.changeState(SocketState.CONNECT_ERROR)
-            socket.reconnect();
+            socket.reconnect()
         }
 
         socket.postEvent(SocketEvents.FailureStatusEvent(t))

@@ -1,7 +1,5 @@
 package com.betroix.proxyland
 
-import com.betroix.proxyland.models.json.BaseResponse
-import com.betroix.proxyland.models.json.TypedBaseResponse
 import com.betroix.proxyland.models.protobuf.Model
 import com.betroix.proxyland.websocket.IWebSocket
 import com.betroix.proxyland.websocket.SocketEvents
