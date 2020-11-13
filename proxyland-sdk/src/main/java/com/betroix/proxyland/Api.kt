@@ -66,8 +66,8 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
 //         val serverInfo = getServerInfo()
         secret = "aaf2289f-ef5c-4c1f-ba07-f6b860c8dc69"; // serverInfo.secret
 //         this.websocket = SocketBuilder(serverInfo.url).build()
-//        this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
-        this.websocket = SocketBuilder("ws://192.168.1.72:4343").build()
+        this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
+//        this.websocket = SocketBuilder("ws://192.168.1.72:4343").build()
     }
 
     override fun startSocket(timeout: Long): Maybe<SocketEvents.StatusEvent> {

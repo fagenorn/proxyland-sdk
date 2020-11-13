@@ -15,7 +15,10 @@ internal class Http(private val api: IApi, private val message: Model.ServerMess
         private val TAG = "Proxyland HTTP"
     }
 
-    private val client = OkHttpClient()
+    private val client: OkHttpClient = OkHttpClient.Builder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .build()
 
     fun request() {
         try {

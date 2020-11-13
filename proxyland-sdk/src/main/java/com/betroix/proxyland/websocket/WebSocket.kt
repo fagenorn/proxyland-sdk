@@ -14,7 +14,7 @@ import kotlin.math.roundToLong
 internal class WebSocket(private val webSocketFactory: WebSocketFactory, private val url: String) :
     IWebSocket {
     companion object {
-        private val TAG = "Proxyland WebSocket"
+        private const val TAG = "Proxyland WebSocket"
         private const val CLOSE_REASON = "End of session"
         private const val MAX_COLLISION = 7
     }
