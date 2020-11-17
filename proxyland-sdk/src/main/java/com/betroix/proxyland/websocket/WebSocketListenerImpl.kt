@@ -57,7 +57,7 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
             socket.postEvent(
                 SocketEvents.CloseStatusEvent(
                     serverCloseFrame!!.closeCode,
-                    serverCloseFrame!!.closeReason,
+                    serverCloseFrame.closeReason,
                 )
             )
         }

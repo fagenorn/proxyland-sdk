@@ -11,10 +11,48 @@ import java.util.*
 class ProxylandSdk(context: Context, partnerId: String) {
     companion object {
         private val TAG = "Proxyland Sdk"
+        private var instance: ProxylandSdk? = null;
+
+        private fun initializeInternal(context: Context, partnerId: String): Observable<Unit> {
+            if (instance != null) Observable.empty<Unit>()
+            val sdk = ProxylandSdk(context, partnerId)
+            instance = sdk;
+
+            return Observable.create { subscription ->
+                try {
+                    sdk.api.createSocket()
+                    sdk.api.startSocket()
+                        .doOnSuccess { subscription.onComplete() }
+                        .doOnError { subscription.onError(it) }
+                        .subscribe({}, {})
+                } catch (t: Throwable) {
+                    subscription.tryOnError(t)
+                }
+            }
+        }
+
+        fun initialize(context: Context, partnerId: String) {
+            initializeInternal(context, partnerId).doOnError { Log.e(TAG, "START SOCKET", it) }
+                .blockingSubscribe()
+        }
+
+        fun initializeAsync(
+            context: Context, partnerId: String,
+            completedCallback: (() -> Unit)? = null,
+            errorCallback: ((t: Throwable) -> Unit)? = null
+        ) {
+            initializeInternal(context, partnerId).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnComplete { completedCallback?.invoke() }
+                .doOnError {
+                    Log.e(TAG, "START SOCKET", it)
+                    errorCallback?.invoke(it)
+                }
+                .subscribe({}, {})
+        }
     }
 
     private val api: IApi
-    private var initialized = false
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("proxyland", Context.MODE_PRIVATE)
     private val remoteIdKey = "proxyland-remote-id"
@@ -23,53 +61,6 @@ class ProxylandSdk(context: Context, partnerId: String) {
         api = Api(partnerId, getRemoteId())
     }
 
-    fun initialize() {
-        if (initialized) return
-        initialized = true
-
-        Observable.create<Unit> { subscription ->
-
-            try {
-                api.createSocket()
-                api.startSocket()
-                    .doOnSuccess { subscription.onComplete() }
-                    .subscribe({}, {})
-            } catch (t: Throwable) {
-                subscription.onError(t)
-            }
-
-        }.doOnError { Log.e(TAG, "START SOCKET", it) }
-            .blockingSubscribe()
-    }
-
-    fun initializeAsync(
-        completedCallback: (() -> Unit)? = null,
-        errorCallback: ((t: Throwable) -> Unit)? = null
-    ) {
-        if (initialized) return
-        initialized = true
-
-        Observable.create<Unit> { subscription ->
-
-            try {
-                api.createSocket()
-                api.startSocket()
-                    .doOnSuccess { subscription.onComplete() }
-                    .doOnError { subscription.onError(it) }
-                    .subscribe({}, {})
-            } catch (t: Throwable) {
-                subscription.tryOnError(t)
-            }
-
-        }.subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnComplete { completedCallback?.invoke() }
-            .doOnError {
-                Log.e(TAG, "START SOCKET", it)
-                errorCallback?.invoke(it)
-            }
-            .subscribe({}, {})
-    }
 
     private fun getRemoteId(): String {
         if (!sharedPreferences.contains(remoteIdKey)) {
