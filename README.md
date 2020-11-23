@@ -31,7 +31,7 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ProxylandSdk.initializeAsync(this, "PARTNER_ID");
+        ProxylandSdk.initializeAsync(this, "PARTNER_ID", "API_KEY");
     }
 }
 ```
@@ -41,7 +41,7 @@ import com.betroix.proxyland.ProxylandSdk
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        ProxylandSdk.initializeAsync(this, "PARTNER_ID")
+        ProxylandSdk.initializeAsync(this, "PARTNER_ID", "API_KEY")
     }
 }
 ```

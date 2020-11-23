@@ -7,7 +7,6 @@ import com.betroix.proxyland.exceptions.ResponseException
 import com.betroix.proxyland.http.Http
 import com.betroix.proxyland.http.Https
 import com.betroix.proxyland.http.HttpsSelector
-import com.betroix.proxyland.models.json.WebsocketServerResponse
 import com.betroix.proxyland.models.protobuf.Model
 import com.betroix.proxyland.websocket.IWebSocket
 import com.betroix.proxyland.websocket.SocketBuilder
@@ -19,7 +18,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-internal class Api(private val partnerId: String, private val remoteId: String) : IApi {
+internal class Api(private val partnerId: String, private val apiKey: String, private val remoteId: String) : IApi {
     companion object {
         private val TAG = "Proxyland Api"
     }
@@ -27,10 +26,9 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
     override var websocket: IWebSocket = WebSocketEmpty()
     private val client = OkHttpClient()
     private val remoteVersion = Version.REMOTE
-    private var secret = ""
     private val selectorLoop = HttpsSelector(this)
 
-    private fun getServerInfo(): WebsocketServerResponse {
+    private fun getWsUrl(): String {
         val request = Request.Builder()
             .url(Endpoint.WS_INFO)
             .build()
@@ -39,14 +37,7 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
             val body = it.body?.string()
                 ?: throw ResponseException("Invalid body when retrieving websocket server info.")
 
-            val json = JSONObject(body)
-
-            return WebsocketServerResponse(
-                json.getString("url"),
-                listOf(json.getString("url")),
-                json.getString("secret"),
-                json.getBoolean("tls")
-            )
+            return JSONObject(body).getString("url")
         }
     }
 
@@ -62,12 +53,7 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
     }
 
     override fun createSocket() {
-        // Get websocket endpoint and secret from server.
-//         val serverInfo = getServerInfo()
-        secret = "aaf2289f-ef5c-4c1f-ba07-f6b860c8dc69"; // serverInfo.secret
-//         this.websocket = SocketBuilder(serverInfo.url).build()
-        this.websocket = SocketBuilder("ws://54.165.176.195:4343").build()
-//        this.websocket = SocketBuilder("ws://192.168.1.72:4343").build()
+        this.websocket = SocketBuilder(getWsUrl()).build()
     }
 
     override fun startSocket(timeout: Long): Maybe<SocketEvents.StatusEvent> {
@@ -103,7 +89,7 @@ internal class Api(private val partnerId: String, private val remoteId: String) 
                 val data =
                     Model.AuthMessage
                         .newBuilder()
-                        .setSecret(secret)
+                        .setSecret(apiKey)
                         .setRemoteVersion(remoteVersion)
                         .setRemoteId(remoteId)
                         .setPartnerId(partnerId)

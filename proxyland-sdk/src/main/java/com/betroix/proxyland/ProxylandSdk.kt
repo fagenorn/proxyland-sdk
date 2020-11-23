@@ -8,14 +8,14 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.*
 
-class ProxylandSdk(context: Context, partnerId: String) {
+class ProxylandSdk(context: Context, partnerId: String, apiKey: String) {
     companion object {
         private val TAG = "Proxyland Sdk"
         private var instance: ProxylandSdk? = null;
 
-        private fun initializeInternal(context: Context, partnerId: String): Observable<Unit> {
+        private fun initializeInternal(context: Context, partnerId: String, apiKey: String): Observable<Unit> {
             if (instance != null) Observable.empty<Unit>()
-            val sdk = ProxylandSdk(context, partnerId)
+            val sdk = ProxylandSdk(context, partnerId, apiKey)
             instance = sdk;
 
             return Observable.create { subscription ->
@@ -31,17 +31,17 @@ class ProxylandSdk(context: Context, partnerId: String) {
             }
         }
 
-        fun initialize(context: Context, partnerId: String) {
-            initializeInternal(context, partnerId).doOnError { Log.e(TAG, "START SOCKET", it) }
+        fun initialize(context: Context, partnerId: String, apiKey: String,) {
+            initializeInternal(context, partnerId, apiKey).doOnError { Log.e(TAG, "START SOCKET", it) }
                 .blockingSubscribe()
         }
 
         fun initializeAsync(
-            context: Context, partnerId: String,
+            context: Context, partnerId: String, apiKey: String,
             completedCallback: (() -> Unit)? = null,
             errorCallback: ((t: Throwable) -> Unit)? = null
         ) {
-            initializeInternal(context, partnerId).subscribeOn(Schedulers.io())
+            initializeInternal(context, partnerId, apiKey).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnComplete { completedCallback?.invoke() }
                 .doOnError {
@@ -58,7 +58,7 @@ class ProxylandSdk(context: Context, partnerId: String) {
     private val remoteIdKey = "proxyland-remote-id"
 
     init {
-        api = Api(partnerId, getRemoteId())
+        api = Api(partnerId, apiKey, getRemoteId())
     }
 
 

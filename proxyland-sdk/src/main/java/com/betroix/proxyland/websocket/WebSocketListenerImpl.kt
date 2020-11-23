@@ -188,6 +188,7 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         websocket: com.neovisionaries.ws.client.WebSocket?,
         cause: WebSocketException?
     ) {
+        socket.postEvent(SocketEvents.FailureStatusEvent(cause))
     }
 
     override fun onFrameError(
