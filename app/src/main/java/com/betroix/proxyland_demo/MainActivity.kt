@@ -1,5 +1,6 @@
 package com.betroix.proxyland_demo
 
+import android.app.Application
 import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
