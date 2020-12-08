@@ -2,7 +2,6 @@ package com.betroix.proxyland.http
 
 import android.util.Log
 import com.betroix.proxyland.IApi
-import com.betroix.proxyland.exceptions.ProxylandException
 import com.betroix.proxyland.models.protobuf.Model
 import com.betroix.proxyland.websocket.SocketEvents
 import com.google.protobuf.ByteString
@@ -22,16 +21,20 @@ internal class Https(private val api: IApi, val message: Model.ServerMessage) {
     var writerDispose: Disposable = Disposable.empty()
 
     fun connect(): Single<SocketChannel> {
-        val socket = createSocket();
-
         // Monitor socket till connection is established
-        return Observable.just(socket)
+        return Observable.just(createSocket())
             .delay(50, TimeUnit.MILLISECONDS)
-            .repeatUntil { socket.finishConnect() }
-            .filter { socket.finishConnect() }
+            .repeat()
+            .filter { it.finishConnect() }
             .firstOrError()
-            .doOnError { Log.w(TAG, "HTTPS CONNECT", it) }
-            .doOnSuccess {
+            .doOnError {
+                Log.w(
+                    TAG,
+                    "HTTPS CONNECT (${message.https.host}:${message.https.port})",
+                    it
+                )
+            }
+            .doOnSuccess { socket ->
                 // Tunnel websocket client data to socket input.
                 writerDispose = api.websocket.observe(SocketEvents.HttpsEvent::class.java)
                     .filter { it.response.id == message.id }
@@ -56,7 +59,11 @@ internal class Https(private val api: IApi, val message: Model.ServerMessage) {
     private fun createSocket(): SocketChannel {
         val socket = SocketChannel.open()
         socket.configureBlocking(false);
-        socket.connect(InetSocketAddress(message.https.host, message.https.port))
+
+        try {
+            socket.connect(InetSocketAddress(message.https.host, message.https.port))
+        } catch (ex: Exception) {
+        }
 
         return socket
     }

@@ -18,7 +18,7 @@ internal class HttpsSelector(private val api: IApi) {
     }
 
     private val selector: Selector = Selector.open()
-    private var running = false;
+    private var running = false
 
     init {
         // Start socket reader loop
@@ -42,7 +42,7 @@ internal class HttpsSelector(private val api: IApi) {
 
     @Suppress("UNCHECKED_CAST")
     private fun loop() {
-        running = true;
+        running = true
         try {
             val noOfKeys = selector.selectNow()
             if (noOfKeys == 0) return
@@ -59,11 +59,11 @@ internal class HttpsSelector(private val api: IApi) {
                 if (key.isReadable) {
                     val client = key.channel() as SocketChannel
                     val buffer = ByteBuffer.allocate(4096)
-                    var read: Int;
+                    var read: Int
 
                     do {
-                        read = client.read(buffer);
-                        buffer.flip();
+                        read = client.read(buffer)
+                        buffer.flip()
 
                         if (read > 0) {
                             val result = ByteArray(read)
@@ -89,7 +89,7 @@ internal class HttpsSelector(private val api: IApi) {
         } catch (e: Exception) {
             Log.e(TAG, "HTTPS READ SOCKET", e)
         } finally {
-            running = false;
+            running = false
         }
     }
 }

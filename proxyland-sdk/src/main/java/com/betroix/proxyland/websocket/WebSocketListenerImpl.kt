@@ -131,7 +131,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         try {
             val response = Model.ServerMessage.parseFrom(binary)
 
-
             when (response.action) {
                 Model.Action.AUTH -> socket.postEvent(SocketEvents.AuthMessageEvent(response))
                 Model.Action.HEARTBEAT -> socket.postEvent(SocketEvents.HeartbeatEvent(response))

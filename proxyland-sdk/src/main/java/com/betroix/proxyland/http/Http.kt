@@ -31,8 +31,6 @@ internal class Http(private val api: IApi, private val message: Model.ServerMess
             if (body.method == null) throw RequestException("No method provided.")
             if (body.headersMap == null) throw RequestException("No headers provided.")
 
-            Log.i(TAG, body.url)
-
             val builder = Request.Builder()
                 .url(body.url)
                 .method(
