@@ -1,6 +1,7 @@
 package com.betroix.proxyland
 
 import android.util.Log
+import androidx.lifecycle.Observer
 import com.betroix.proxyland.constants.Endpoint
 import com.betroix.proxyland.constants.Version
 import com.betroix.proxyland.exceptions.ResponseException
