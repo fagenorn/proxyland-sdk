@@ -11,21 +11,28 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 
 class ProxylandSdkService : Service() {
     companion object {
-        private val TAG = "Proxyland Sdk"
+        private val TAG = "Proxyland Service"
     }
 
     private var api: IApi? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (api != null) {
+            Log.w(TAG, "API already initialized")
             return START_REDELIVER_INTENT;
         }
 
         if (intent == null) {
+            Log.w(TAG, "Intent not set")
             return START_NOT_STICKY;
         }
 
-        val extras = intent.extras ?: return START_NOT_STICKY
+        val extras = intent.extras
+        if (extras == null) {
+            Log.w(TAG, "Intent extra not set")
+            return START_NOT_STICKY
+        }
+
         val partnerId = extras.get("partnerId") as String
         val apiKey = extras.get("apiKey") as String
         val remoteId = extras.get("remoteId") as String
