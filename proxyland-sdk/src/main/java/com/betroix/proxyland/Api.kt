@@ -115,4 +115,11 @@ internal class Api(private val partnerId: String, private val apiKey: String, pr
 
         return authObs ?: throw IllegalArgumentException("Unable to start socket")
     }
+
+    override fun stopSocket() {
+        Log.d(TAG, "Terminating")
+
+        websocket.terminate()
+        selectorLoop.terminate()
+    }
 }

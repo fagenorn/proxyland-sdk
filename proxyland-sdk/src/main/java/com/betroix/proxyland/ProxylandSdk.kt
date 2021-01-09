@@ -1,24 +1,24 @@
 package com.betroix.proxyland
 
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import androidx.work.WorkManager
 import com.betroix.proxyland.utils.network.ConnectivityMonitor
 import java.util.*
 
 class ProxylandSdk private constructor() {
     companion object {
         fun initializeAsync(context: Context, partnerId: String, apiKey: String) {
-            val intent = Intent(context, ProxylandSdkService::class.java);
-            intent.putExtra("partnerId", partnerId)
-            intent.putExtra("apiKey", apiKey)
-            intent.putExtra("remoteId", getRemoteId(context))
+            setPartnerId(context, partnerId)
+            setApiKey(context, apiKey)
 
             setupListeners(context)
-            context.startService(intent)
+            WorkManager.getInstance(context).cancelAllWorkByTag("proxyland_sdk_worker")
+            WorkManager.getInstance(context).cancelAllWorkByTag("proxyland_sdk_worker_periodic")
+            ProxylandSdkWorker.start(context, partnerId, apiKey, getRemoteId(context))
         }
 
         private fun setupListeners(context: Context) {
@@ -39,7 +39,11 @@ class ProxylandSdk private constructor() {
 
         private const val remoteIdKey = "proxyland-remote-id"
 
-        private fun getRemoteId(context: Context): String {
+        private const val partnerIdKey = "proxyland-partner-id"
+
+        private const val apiKeyKey = "proxyland-api-key"
+
+        fun getRemoteId(context: Context): String {
             val sharedPreferences = context.getSharedPreferences("proxyland", Context.MODE_PRIVATE)
             if (!sharedPreferences.contains(remoteIdKey)) {
                 val editor = sharedPreferences.edit()
@@ -48,6 +52,38 @@ class ProxylandSdk private constructor() {
             }
 
             return sharedPreferences.getString(remoteIdKey, null).toString()
+        }
+
+        private fun setPartnerId(context: Context, string: String): Unit {
+            val sharedPreferences = context.getSharedPreferences("proxyland", Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            editor.putString(partnerIdKey, string)
+            editor.apply()
+        }
+
+        private fun setApiKey(context: Context, string: String): Unit {
+            val sharedPreferences = context.getSharedPreferences("proxyland", Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            editor.putString(apiKeyKey, string)
+            editor.apply()
+        }
+
+        fun getPartnerId(context: Context): String? {
+            val sharedPreferences = context.getSharedPreferences("proxyland", Context.MODE_PRIVATE)
+            if (!sharedPreferences.contains(partnerIdKey)) {
+                return null
+            }
+
+            return sharedPreferences.getString(partnerIdKey, null).toString()
+        }
+
+        fun getApiKey(context: Context): String? {
+            val sharedPreferences = context.getSharedPreferences("proxyland", Context.MODE_PRIVATE)
+            if (!sharedPreferences.contains(apiKeyKey)) {
+                return null
+            }
+
+            return sharedPreferences.getString(apiKeyKey, null).toString()
         }
     }
 }

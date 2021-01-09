@@ -12,6 +12,8 @@ internal interface IApi {
      */
     fun startSocket(timeout: Long = 5000): Maybe<SocketEvents.StatusEvent>
 
+    fun stopSocket()
+
     fun createSocket()
 
     fun sendToSocket(response: Model.ServerMessage, request: Model.RemoteMessage.Builder)

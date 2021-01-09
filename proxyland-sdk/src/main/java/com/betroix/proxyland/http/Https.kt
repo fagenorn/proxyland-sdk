@@ -18,7 +18,7 @@ internal class Https(private val api: IApi, val message: Model.ServerMessage) {
         private val TAG = "Proxyland Https Request"
     }
 
-    var writerDispose: Disposable = Disposable.empty()
+    var writerDispose: Disposable? = null
 
     fun connect(): Single<SocketChannel> {
         // Monitor socket till connection is established

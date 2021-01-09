@@ -19,14 +19,19 @@ internal class HttpsSelector(private val api: IApi) {
 
     private val selector: Selector = Selector.open()
     private var running = false
+    private var terminate = false
 
     init {
         // Start socket reader loop
         Observable.timer(100, TimeUnit.MILLISECONDS)
-            .repeat()
+            .repeatUntil { terminate }
             .filter { !running }
             .doOnError { Log.e(TAG, "HTTPS LOOP", it) }
             .subscribe({ loop() }, {})
+    }
+
+    fun terminate() {
+        terminate = true;
     }
 
     fun register(https: Https) {
@@ -51,7 +56,7 @@ internal class HttpsSelector(private val api: IApi) {
 
             while (iter.hasNext()) {
                 val key = iter.next() as SelectionKey
-                val (message, disposable) = key.attachment() as Pair<Model.ServerMessage, Disposable>
+                val (message, disposable) = key.attachment() as Pair<Model.ServerMessage, Disposable?>
 
                 iter.remove()
 
@@ -83,7 +88,7 @@ internal class HttpsSelector(private val api: IApi) {
 
                 } else {
                     // Dispose the writer observable.
-                    disposable.dispose()
+                    disposable?.dispose()
                 }
             }
         } catch (e: Exception) {
