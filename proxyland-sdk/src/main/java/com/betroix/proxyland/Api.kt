@@ -47,14 +47,16 @@ internal class Api(private val partnerId: String, private val apiKey: String, pr
         request.action = response.action
         request.version = response.version
 
-        val message = request.build().toByteArray();
+        val message = request.build().toByteArray()
 //        Log.d(TAG, "(S) Message - ${message.joinToString(",", "[", "]") { it.toInt().toString() }}")
 
         websocket.send(message)
     }
 
     override fun createSocket() {
-        this.websocket = SocketBuilder(getWsUrl()).build()
+//         ws://mars-protobuf.proxyland.io:4343
+         this.websocket = SocketBuilder(getWsUrl()).build()
+//        this.websocket = SocketBuilder("ws://localhost:4343").build()
     }
 
     override fun startSocket(timeout: Long): Maybe<SocketEvents.StatusEvent> {

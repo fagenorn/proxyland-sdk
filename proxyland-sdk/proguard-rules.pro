@@ -21,3 +21,5 @@
 #-renamesourcefileattribute SourceFile
 
 -keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
+-keep class com.betroix.proxyland.* { *; }
+
