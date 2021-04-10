@@ -56,7 +56,7 @@ internal class Api(private val partnerId: String, private val apiKey: String, pr
     override fun createSocket() {
 //         ws://mars-protobuf.proxyland.io:4343
          this.websocket = SocketBuilder(getWsUrl()).build()
-//        this.websocket = SocketBuilder("ws://localhost:4343").build()
+//        this.websocket = SocketBuilder("ws://192.168.1.72:4343").build()
     }
 
     override fun startSocket(timeout: Long): Maybe<SocketEvents.StatusEvent> {

@@ -21,8 +21,8 @@ internal class WebSocket(private val webSocketFactory: WebSocketFactory, private
 
     private var mState: SocketState
     private var mRealWebSocket: WebSocket? = null
+    private var reconnectionAttempts = 0
 
-    internal var reconnectionAttempts = 0
     internal var isForceTermination = false
 
     private val eventBus: PublishSubject<SocketEvents.Event> = PublishSubject.create()
@@ -48,6 +48,7 @@ internal class WebSocket(private val webSocketFactory: WebSocketFactory, private
 
     fun postEvent(event: SocketEvents.Event) {
         if (!eventBus.hasObservers()) return
+        if(event is SocketEvents.StatusEvent && event.response.status.authenticated) reconnectionAttempts = 0
         eventBus.onNext(event)
     }
 

@@ -32,7 +32,6 @@ internal class WebSocketListenerImpl(private val socket: com.betroix.proxyland.w
         websocket: com.neovisionaries.ws.client.WebSocket?,
         headers: MutableMap<String, MutableList<String>>?
     ) {
-        socket.reconnectionAttempts = 0
         socket.postEvent(SocketEvents.OpenStatusEvent(headers))
     }
 

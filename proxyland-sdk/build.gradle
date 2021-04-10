@@ -7,7 +7,7 @@ def githubProperties = new Properties()
 githubProperties.load(new FileInputStream(rootProject.file("github.properties"))) //Set env variable GPR_USER & GPR_API_KEY if not adding a properties file
 
 def getVersionName = { ->
-    return "1.5" // Replace with version Name
+    return "1.6" // Replace with version Name
 }
 
 def getArtificatId = { ->
@@ -45,7 +45,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 2
-        versionName "1.5"
+        versionName "1.6"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-rules.pro'
@@ -81,7 +81,7 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-javalite:3.13.0'
     implementation 'com.neovisionaries:nv-websocket-client:2.10'
 
-    def work_version = "2.4.0"
+    def work_version = "2.5.0"
     implementation "androidx.work:work-runtime:$work_version"
     implementation "androidx.work:work-runtime-ktx:$work_version"
     implementation "androidx.work:work-rxjava3:$work_version"

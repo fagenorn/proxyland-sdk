@@ -25,7 +25,12 @@ class ProxylandSdkWorker(context: Context, workerParams: WorkerParameters) :
                 .setRequiresBatteryNotLow(true)
                 .build()
 
-            val workRequest = PeriodicWorkRequestBuilder<ProxylandSdkWorker>(15, TimeUnit.MINUTES, 5, TimeUnit.MINUTES)
+            val workRequest = PeriodicWorkRequestBuilder<ProxylandSdkWorker>(
+                15,
+                TimeUnit.MINUTES,
+                5,
+                TimeUnit.MINUTES
+            )
                 .setConstraints(constraints)
                 .setInputData(
                     workDataOf(
@@ -35,6 +40,16 @@ class ProxylandSdkWorker(context: Context, workerParams: WorkerParameters) :
                     )
                 )
                 .build()
+
+            try {
+                // Already start early
+                api = Api(partnerId, apiKey, remoteId)
+                api?.createSocket()
+                api?.startSocket()
+                    ?.subscribe({}, {})
+            } catch (t: Throwable) {
+                // ignored
+            }
 
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
@@ -50,6 +65,8 @@ class ProxylandSdkWorker(context: Context, workerParams: WorkerParameters) :
             apiKey: String,
             remoteId: String
         ) {
+            Thread.sleep(1000)
+
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .setRequiresBatteryNotLow(true)
@@ -69,7 +86,7 @@ class ProxylandSdkWorker(context: Context, workerParams: WorkerParameters) :
             WorkManager.getInstance(context)
                 .enqueueUniqueWork(
                     "proxyland_sdk_worker",
-                    ExistingWorkPolicy.APPEND_OR_REPLACE,
+                    ExistingWorkPolicy.KEEP,
                     workRequest
                 )
         }
@@ -78,7 +95,8 @@ class ProxylandSdkWorker(context: Context, workerParams: WorkerParameters) :
     override fun doWork(): Result {
         try {
             api?.stopSocket()
-        } catch (t: Throwable) {}
+        } catch (t: Throwable) {
+        }
 
         val partnerId = inputData.getString("partnerId") ?: return Result.failure()
         val apiKey = inputData.getString("apiKey") ?: return Result.failure()
@@ -89,7 +107,7 @@ class ProxylandSdkWorker(context: Context, workerParams: WorkerParameters) :
             Log.d(TAG, "Proxyland socket start")
             api?.createSocket()
             api?.startSocket()
-                ?.blockingSubscribe()
+                ?.blockingSubscribe({}, {})
 
             Single.timer(9, TimeUnit.MINUTES)
                 .blockingGet()
@@ -103,8 +121,8 @@ class ProxylandSdkWorker(context: Context, workerParams: WorkerParameters) :
     }
 
     override fun onStopped() {
-        try {
-            api?.stopSocket()
-        } catch (t: Throwable) {}
+//        try {
+//            api?.stopSocket()
+//        } catch (t: Throwable) {}
     }
 }

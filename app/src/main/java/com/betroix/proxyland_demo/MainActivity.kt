@@ -15,7 +15,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        ProxylandSdk.initializeAsync(this, "tester_partner", "API_KEY")
+        ProxylandSdk.initializeAsync(this, "P85jwxhHfGhoxRnue", "API_KEY")
 
         fab.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
